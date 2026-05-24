@@ -41,10 +41,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#2E7D32_1.5px,transparent_1.5px)] [background-size:24px_24px] pointer-events-none"></div>
         
         <div className="md:col-span-7 space-y-6 relative z-10 text-center md:text-left">
-          <div className="inline-flex items-center gap-2 bg-forest-100/60 border border-forest-200/50 px-3 py-1 rounded-full text-xs font-bold text-forest-800">
-            <span className="w-2 h-2 bg-profit rounded-full animate-ping"></span>
-            ISRO Bhuvan Spatial Compatibility Enabled
-          </div>
+          
           <h1 className="text-4xl md:text-6xl font-extrabold font-manrope text-carbon-900 leading-tight">
             Turn Sustainable Farming into <span className="text-forest-800 underline decoration-earth-light decoration-4">Income</span>
           </h1>
