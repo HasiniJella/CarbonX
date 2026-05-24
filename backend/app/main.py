@@ -6,8 +6,8 @@ APP_DIR = Path(__file__).resolve().parent
 BACKEND_DIR = APP_DIR.parent
 ROOT_DIR = BACKEND_DIR.parent
 
-load_dotenv(ROOT_DIR / ".env")
-load_dotenv(BACKEND_DIR / ".env")
+load_dotenv(ROOT_DIR / ".env", override=True)
+load_dotenv(BACKEND_DIR / ".env", override=True)
 
 from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
