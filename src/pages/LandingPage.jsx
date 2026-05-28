@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Compass, Wallet, Cpu, HeartHandshake, ArrowRight, CheckCircle2, ChevronDown } from 'lucide-react';
-import { mockMarketplace } from '../data/mockData';
+import { getMarketplaceListings } from '../services/api';
+import { listingToAuction } from '../utils/farmAnalytics';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [auctions, setAuctions] = useState([]);
+
+  useEffect(() => {
+    getMarketplaceListings()
+      .then((res) => {
+        if (res.success && res.listings?.length) {
+          setAuctions(res.listings.slice(0, 3).map(listingToAuction));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const pipeline = [
     { step: "01", name: "Register Farm", desc: "Draw land boundaries on our ISRO-Bhuvan compatible mapping screen via Aadhaar validation.", icon: Compass },
@@ -201,7 +213,12 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {mockMarketplace.activeAuctions.map(auc => (
+            {auctions.length === 0 ? (
+              <p className="col-span-full text-center text-sm text-carbon-500 py-8">
+                No active listings yet. Register a farm and list credits to appear here.
+              </p>
+            ) : (
+            auctions.map(auc => (
               <div key={auc.id} className="bg-white rounded-3xl overflow-hidden shadow-card border border-forest-100 flex flex-col justify-between">
                 <div className="h-44 overflow-hidden relative">
                   <img src={auc.image} alt={auc.crop} className="w-full h-full object-cover" />
@@ -230,7 +247,8 @@ export default function LandingPage() {
                   </button>
                 </div>
               </div>
-            ))}
+            ))
+            )}
           </div>
         </div>
       </section>

@@ -1,31 +1,63 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Wallet, 
   ArrowUpRight, 
   ArrowDownLeft, 
   CheckCircle, 
-  Clock, 
   ExternalLink, 
   Info,
   ChevronLeft,
-  DollarSign,
-  TrendingUp,
   Shield,
-  Search,
   BookOpen
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockWallet, mockFarmer } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import { combinedCredits } from '../services/api';
+
+const CREDIT_PRICE = 520;
 
 export default function CarbonWallet() {
   const navigate = useNavigate();
-  const [balance, setBalance] = useState(mockWallet.balance);
+  const { user, farms } = useAuth();
+
+  const { verifiedCredits, pendingCredits, initialBalance, farmActivities } = useMemo(() => {
+    let verified = 0;
+    let pending = 0;
+    const acts = farms.map((f, i) => {
+      const c = combinedCredits(f);
+      if (f.status === 'Verified' || !f.status) verified += c.total;
+      else pending += c.total;
+      return {
+        id: `farm-${f.id || i}`,
+        title: `Satellite Verification — ${f.name || 'Farm'}`,
+         credits: c.total,
+        date: f.created_at ? new Date(f.created_at).toLocaleDateString() : 'Registered',
+        status: f.status || 'Verified',
+        meta: f.ndvi != null ? `NDVI ${f.ndvi}` : undefined,
+      };
+    });
+    return {
+      verifiedCredits: verified,
+      pendingCredits: pending,
+      initialBalance: verified * CREDIT_PRICE,
+      farmActivities: acts,
+    };
+  }, [farms]);
+
+  const upiId = user?.upi || mockFarmer.upiId;
+
+  const [balance, setBalance] = useState(initialBalance);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [activities, setActivities] = useState(mockWallet.activities);
+  const [activities, setActivities] = useState(farmActivities);
+
+  useEffect(() => {
+    setBalance(initialBalance);
+    setActivities(farmActivities);
+  }, [initialBalance, farmActivities]);
 
   const handleWithdrawSubmit = (e) => {
     e.preventDefault();
@@ -93,13 +125,13 @@ export default function CarbonWallet() {
         <div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-4 text-xs">
           <div>
             <p className="text-[9px] uppercase tracking-wider text-white/40">Verified Credits</p>
-            <p className="text-sm font-black text-white mt-0.5">{mockWallet.verifiedCredits.toFixed(1)} t</p>
-            <p className="text-[9px] text-earth-accent mt-0.5">₹{(mockWallet.verifiedCredits * 520).toLocaleString('en-IN')}</p>
+            <p className="text-sm font-black text-white mt-0.5">{verifiedCredits.toFixed(1)} t</p>
+            <p className="text-[9px] text-earth-accent mt-0.5">₹{(verifiedCredits * CREDIT_PRICE).toLocaleString('en-IN')}</p>
           </div>
           <div>
             <p className="text-[9px] uppercase tracking-wider text-white/40">Pending Review</p>
-            <p className="text-sm font-black text-white mt-0.5">{mockWallet.pendingCredits.toFixed(1)} t</p>
-            <p className="text-[9px] text-orange-400 mt-0.5">Est: ₹{(mockWallet.pendingCredits * 520).toLocaleString('en-IN')}</p>
+            <p className="text-sm font-black text-white mt-0.5">{pendingCredits.toFixed(1)} t</p>
+            <p className="text-[9px] text-orange-400 mt-0.5">Est: ₹{(pendingCredits * CREDIT_PRICE).toLocaleString('en-IN')}</p>
           </div>
         </div>
 
@@ -133,7 +165,7 @@ export default function CarbonWallet() {
           </div>
           <div>
             <p className="font-bold text-earth-dark">Linked Bank Account</p>
-            <p className="text-[10px] text-earth-muted font-mono">{mockFarmer.upiId}</p>
+            <p className="text-[10px] text-earth-muted font-mono">{upiId}</p>
           </div>
         </div>
         <span className="text-[9px] bg-earth-green/10 text-earth-green font-bold px-2 py-0.5 rounded-full">
@@ -151,7 +183,10 @@ export default function CarbonWallet() {
 
       {/* Transaction list */}
       <div className="bg-white rounded-3xl p-5 border border-earth-green/10 shadow-sm space-y-4">
-        {activities.map((act) => (
+        {activities.length === 0 ? (
+          <p className="text-xs text-earth-muted text-center py-4">No farm credits yet. Register and scan a farm to build your ledger.</p>
+        ) : (
+          activities.map((act) => (
           <div key={act.id} className="flex justify-between items-start text-xs border-b border-earth-green/5 pb-3.5 last:border-0 last:pb-0">
             <div className="flex gap-3">
               <div className={`p-2 rounded-xl h-9 w-9 flex items-center justify-center shrink-0 ${
@@ -190,7 +225,8 @@ export default function CarbonWallet() {
               </span>
             </div>
           </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Withdraw Modal Drawer */}

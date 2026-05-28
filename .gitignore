@@ -13,8 +13,10 @@ dist/
 
 # Secrets
 backend/.env
-.env.example
-backend/.env.example
+.env
+.env.local
+.env.*.local
+
 
 # Large model files
 artifacts/

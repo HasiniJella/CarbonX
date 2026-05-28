@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BarChart, 
@@ -26,12 +26,55 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { mockCorporate } from '../data/mockData';
+import { mockCorporate as corporateDefaults } from '../data/mockData';
+import { getMarketplaceListings, combinedCredits } from '../services/api';
 
 export default function CorporateDashboard() {
   const navigate = useNavigate();
+  const [corporate, setCorporate] = useState(corporateDefaults);
   const [downloading, setDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+
+  useEffect(() => {
+    getMarketplaceListings()
+      .then((res) => {
+        if (!res.success) return;
+        const listings = res.listings || [];
+        let purchased = 0;
+        const portfolio = listings.map((l) => {
+          const c = combinedCredits({
+            carbon_tonnes: l.carbon_credits,
+            biodiversity_credits: l.biodiversity_credits,
+            total_credits: l.total_credits,
+          });
+          purchased += c.total;
+          return {
+            id: l.id,
+            farm: l.crop || 'Carbon Credits',
+            state: l.location || '',
+            size: `${c.total} tCO2e`,
+            status: l.status || 'Active',
+            purchased: c.total,
+            standard: 'ISO 14064',
+            price: `₹${l.price_per_credit || 520}/cr`,
+          };
+        });
+        setCorporate({
+          ...corporateDefaults,
+          companyName: 'Corporate Buyer',
+          purchasedCredits: Math.round(purchased),
+          complianceScore: listings.length ? 92 : 0,
+          activeBids: listings.filter((l) => l.status === 'Active').length,
+          portfolio,
+          offsetsTimeline: portfolio.slice(0, 6).map((p, i) => ({
+            year: `Q${(i % 4) + 1}`,
+            offset: p.purchased,
+            target: Math.max(p.purchased * 0.8, 1),
+          })),
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   const handleDownloadReport = () => {
     setDownloading(true);
@@ -47,7 +90,7 @@ export default function CorporateDashboard() {
   return (
     <div className="pb-24 px-4 pt-4 max-w-md mx-auto bg-earth-cream min-h-screen text-earth-dark font-sans">
       
-      {/* Top corporate profile section */}
+      {/* Top mockCorporate profile section */}
       <motion.div 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -59,7 +102,7 @@ export default function CorporateDashboard() {
           </div>
           <div>
             <p className="text-xs text-earth-muted">ESG Corporate Account</p>
-            <h2 className="text-sm font-black text-earth-dark">{mockCorporate.companyName}</h2>
+            <h2 className="text-sm font-black text-earth-dark">{corporate.companyName}</h2>
           </div>
         </div>
         <span className="text-[10px] bg-earth-green/10 text-earth-green border border-earth-green/15 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
@@ -80,10 +123,10 @@ export default function CorporateDashboard() {
           <div>
             <span className="text-[10px] text-earth-muted font-bold uppercase tracking-wider">ESG Global Offset Progress</span>
             <h3 className="text-2xl font-black text-earth-dark mt-1">
-              {mockCorporate.purchasedCredits.toLocaleString()} <span className="text-xs font-normal text-earth-muted">tCO2e Offset</span>
+              {corporate.purchasedCredits.toLocaleString()} <span className="text-xs font-normal text-earth-muted">tCO2e Offset</span>
             </h3>
             <p className="text-[10px] text-earth-green font-medium mt-1">
-              {((mockCorporate.purchasedCredits / mockCorporate.esgTarget) * 100).toFixed(1)}% of annual target ({mockCorporate.esgTarget.toLocaleString()} tCO2e)
+              {((corporate.purchasedCredits / corporate.esgTarget) * 100).toFixed(1)}% of annual target ({corporate.esgTarget.toLocaleString()} tCO2e)
             </p>
           </div>
           <div className="p-2.5 bg-earth-green/10 text-earth-green rounded-xl">
@@ -95,7 +138,7 @@ export default function CorporateDashboard() {
         <div className="w-full bg-earth-green/5 h-3.5 rounded-full overflow-hidden mb-5 border border-earth-green/10">
           <motion.div 
             initial={{ width: 0 }}
-            animate={{ width: `${(mockCorporate.purchasedCredits / mockCorporate.esgTarget) * 100}%` }}
+            animate={{ width: `${(corporate.purchasedCredits / corporate.esgTarget) * 100}%` }}
             transition={{ duration: 1.2, ease: "easeOut" }}
             className="h-full bg-gradient-to-r from-earth-green to-earth-accent rounded-full"
           />
@@ -104,11 +147,11 @@ export default function CorporateDashboard() {
         <div className="grid grid-cols-2 gap-4 text-xs border-t border-earth-green/5 pt-4">
           <div>
             <p className="text-[9px] uppercase tracking-wider text-earth-muted">Compliance Score</p>
-            <p className="text-sm font-black text-earth-dark mt-0.5">{mockCorporate.complianceScore}</p>
+            <p className="text-sm font-black text-earth-dark mt-0.5">{corporate.complianceScore}</p>
           </div>
           <div>
             <p className="text-[9px] uppercase tracking-wider text-earth-muted">Active Escrow Bids</p>
-            <p className="text-sm font-black text-earth-accent mt-0.5">{mockCorporate.activeBids} lot auctions</p>
+            <p className="text-sm font-black text-earth-accent mt-0.5">{corporate.activeBids} lot auctions</p>
           </div>
         </div>
       </motion.div>
@@ -132,7 +175,7 @@ export default function CorporateDashboard() {
         <div className="h-44 w-full text-[10px] font-mono">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={mockCorporate.offsetsTimeline}
+              data={corporate.offsetsTimeline}
               margin={{ top: 5, right: 0, left: -25, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
@@ -212,7 +255,7 @@ export default function CorporateDashboard() {
 
       {/* Corporate offset portfolio */}
       <div className="flex items-center justify-between mb-4 px-1">
-        <h4 className="text-xs font-bold text-earth-muted uppercase tracking-wider">Purchased Portfolio ({mockCorporate.portfolio.length})</h4>
+        <h4 className="text-xs font-bold text-earth-muted uppercase tracking-wider">Purchased Portfolio ({corporate.portfolio.length})</h4>
         <button 
           onClick={() => navigate('/marketplace')}
           className="text-xs text-earth-green font-bold flex items-center gap-0.5 hover:underline"
@@ -223,7 +266,7 @@ export default function CorporateDashboard() {
       </div>
 
       <div className="space-y-4">
-        {mockCorporate.portfolio.map((port) => (
+        {corporate.portfolio.map((port) => (
           <div 
             key={port.id} 
             className="bg-white rounded-2xl p-4 border border-earth-green/10 shadow-sm flex flex-col gap-3.5"

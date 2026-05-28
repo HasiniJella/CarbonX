@@ -21,6 +21,7 @@ export default function FarmerRegister() {
   const [upi, setUpi] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [devOtp, setDevOtp] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
 
   const startResendTimer = () => {
@@ -41,6 +42,7 @@ export default function FarmerRegister() {
     try {
       const res = await sendOtp(phone);
       if (res.success) {
+        setDevOtp(res.dev_otp || "");
         setStep(2);
         startResendTimer();
       } else {
@@ -59,6 +61,7 @@ export default function FarmerRegister() {
     try {
       const res = await sendOtp(phone);
       if (res.success) {
+        setDevOtp(res.dev_otp || "");
         startResendTimer();
         setOtp("");
       }
@@ -180,9 +183,15 @@ export default function FarmerRegister() {
               <h2 className="text-xl font-bold font-poppins text-carbon-900">{t('enterOtp')}</h2>
               <p className="text-xs text-carbon-500 leading-normal mt-1">{t('smsSent')} {phone}</p>
             </div>
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-2.5 text-xs text-emerald-800 text-center">
-              📱 {t('smsSent')} {phone}
-            </div>
+            {devOtp ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2.5 text-xs text-amber-800 text-center font-mono">
+                Dev OTP (SMS unavailable): <span className="font-black text-amber-900 text-sm">{devOtp}</span>
+              </div>
+            ) : (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-2.5 text-xs text-emerald-800 text-center">
+                📱 {t('smsSent')} {phone}
+              </div>
+            )}
             <form onSubmit={handleVerifyOtp} className="space-y-6">
               <div className="flex justify-center gap-4">
                 {[0,1,2,3,4,5].map(i => (

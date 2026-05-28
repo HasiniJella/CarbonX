@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LineChart, 
@@ -28,18 +28,41 @@ import {
   Info
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { mockFarms } from '../data/mockData';
-
-// Color theme variables mapped in index.css:
-// --earth-green: #2C5E43
-// --earth-accent: #E29B63
-// --earth-dark: #1E3127
-// --earth-cream: #FAF6F0
+import { useAuth } from '../context/AuthContext';
+import { farmsToAnalytics } from '../utils/farmAnalytics';
 
 export default function DetailedFarmAnalytics() {
   const navigate = useNavigate();
-  const [selectedFarm, setSelectedFarm] = useState(mockFarms[0]);
-  const [activeTab, setActiveTab] = useState('ndvi'); // ndvi | carbon | soil
+  const { farms } = useAuth();
+  const analyticsFarms = useMemo(() => farmsToAnalytics(farms), [farms]);
+  const [selectedFarm, setSelectedFarm] = useState(null);
+  const [activeTab, setActiveTab] = useState('ndvi');
+
+  useEffect(() => {
+    if (analyticsFarms.length) {
+      setSelectedFarm((prev) => {
+        if (prev && analyticsFarms.some((f) => f.id === prev.id)) return prev;
+        return analyticsFarms[0];
+      });
+    } else {
+      setSelectedFarm(null);
+    }
+  }, [analyticsFarms]);
+
+  if (!analyticsFarms.length || !selectedFarm) {
+    return (
+      <div className="pb-24 px-4 pt-4 max-w-md mx-auto bg-earth-cream min-h-screen text-earth-dark font-sans text-center">
+        <p className="text-sm text-earth-muted mt-20 mb-4">No farm data yet. Draw a boundary and run satellite analysis first.</p>
+        <button
+          type="button"
+          onClick={() => navigate('/farm-map')}
+          className="px-6 py-3 bg-earth-green text-white rounded-2xl text-xs font-bold"
+        >
+          Map Your Farm
+        </button>
+      </div>
+    );
+  }
   
   // Custom mock layers description
   const tabDetails = {
@@ -75,7 +98,7 @@ export default function DetailedFarmAnalytics() {
   const currentTab = tabDetails[activeTab];
 
   // Helper for active farm boundary rendering
-  const isNorthPlot = selectedFarm.id === 'farm-01';
+  const isNorthPlot = selectedFarm.id === analyticsFarms[0]?.id;
 
   return (
     <div className="pb-24 px-4 pt-4 max-w-md mx-auto bg-earth-cream min-h-screen text-earth-dark font-sans">
@@ -98,7 +121,7 @@ export default function DetailedFarmAnalytics() {
 
       {/* Farm Selector Tab Bar */}
       <div className="flex gap-2 mb-5 p-1 bg-earth-green/5 border border-earth-green/10 rounded-2xl">
-        {mockFarms.map((farm) => (
+        {analyticsFarms.map((farm) => (
           <button
             key={farm.id}
             onClick={() => setSelectedFarm(farm)}

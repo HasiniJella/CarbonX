@@ -4,17 +4,29 @@ import {
   ArrowLeft, ShieldCheck, Compass, BarChart3, Info, AlertTriangle, 
   Satellite, Cpu, Award, TrendingUp, HelpCircle, ChevronRight, RefreshCw
 } from 'lucide-react';
-import { mockFarms } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import { farmsToAnalytics } from '../utils/farmAnalytics';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
 
 export default function CorporateCreditAnalysis() {
   const navigate = useNavigate();
   const { id } = useParams();
-  
-  // Use mock farm 1 as fallback or look up by ID
-  const farm = mockFarms.find(f => f.id === id) || mockFarms[0];
+  const { farms } = useAuth();
+  const analyticsFarms = farmsToAnalytics(farms);
+  const farm = analyticsFarms.find((f) => f.id === id) || analyticsFarms[0];
 
-  // Mock pricing trends
+  if (!farm) {
+    return (
+      <div className="min-h-screen bg-carbon-950 text-white flex flex-col items-center justify-center p-6">
+        <p className="text-sm text-carbon-400 mb-4">No verified farm data available. Browse the marketplace for live listings.</p>
+        <button type="button" onClick={() => navigate('/marketplace')} className="px-6 py-3 bg-emerald-600 rounded-2xl text-xs font-bold">
+          Open Marketplace
+        </button>
+      </div>
+    );
+  }
+
+  // Pricing trends from recent marketplace activity
   const priceTrendData = [
     { week: 'W1', value: 480 },
     { week: 'W2', value: 495 },

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, Compass, ShoppingCart, Wallet, UserCheck, Menu, Bell, Globe, X, ChevronRight } from 'lucide-react';
 import { mockFarmer } from '../data/mockData';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const ALL_ROUTES = [
   { category: "Auth & Onboarding", items: [
@@ -40,8 +41,19 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, changeLanguage, currentLang } = useLanguage();
+  const { user } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const displayName = user?.name || mockFarmer.name;
+  const displayVillage = [user?.village, user?.district].filter(Boolean).join(', ') || mockFarmer.village;
+  const initials = displayName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() || 'F';
+
+  const ProfileAvatar = ({ className = '' }) => (
+    <div className={`bg-forest-100 flex items-center justify-center text-xs font-bold text-forest-800 ${className}`}>
+      {initials}
+    </div>
+  );
 
   const isPublicPage =
     location.pathname === '/' ||
@@ -144,7 +156,7 @@ export default function Layout({ children }) {
             onClick={() => navigate('/farmer-dashboard')}
             className="w-9 h-9 rounded-full overflow-hidden border border-forest-200/80 shadow-sm"
           >
-            <img src={mockFarmer.avatar} alt="Profile" className="w-full h-full object-cover" />
+            <ProfileAvatar className="w-full h-full" />
           </button>
         </div>
       </header>
@@ -221,11 +233,11 @@ export default function Layout({ children }) {
         {/* Profile card */}
         <div className="p-6 border-t border-forest-100/60 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl overflow-hidden border border-forest-200 shadow-sm">
-            <img src={mockFarmer.avatar} alt="Ramesh" className="w-full h-full object-cover" />
+            <ProfileAvatar className="w-full h-full" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-carbon-800 truncate leading-tight">{mockFarmer.name}</p>
-            <p className="text-xs text-forest-600 truncate">{mockFarmer.village}</p>
+            <p className="text-sm font-bold text-carbon-800 truncate leading-tight">{displayName}</p>
+            <p className="text-xs text-forest-600 truncate">{displayVillage}</p>
           </div>
         </div>
       </aside>
@@ -302,11 +314,11 @@ export default function Layout({ children }) {
 
             <div className="px-5 py-4 border-t border-forest-100 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl overflow-hidden border border-forest-200">
-                <img src={mockFarmer.avatar} alt="" className="w-full h-full object-cover" />
+                <ProfileAvatar className="w-full h-full" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-carbon-800 truncate">{mockFarmer.name}</p>
-                <p className="text-[10px] text-forest-600 truncate">{mockFarmer.village}</p>
+                <p className="text-xs font-bold text-carbon-800 truncate">{displayName}</p>
+                <p className="text-[10px] text-forest-600 truncate">{displayVillage}</p>
               </div>
             </div>
           </div>

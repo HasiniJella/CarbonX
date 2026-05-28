@@ -15,6 +15,7 @@ export default function FarmerLogin() {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [devOtp, setDevOtp] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
 
   const startResendTimer = () => {
@@ -39,6 +40,7 @@ export default function FarmerLogin() {
       const cleanPhone = phone.replace(/\D/g, '');
       const res = await sendLoginOtp(cleanPhone);
       if (res.success) {
+        setDevOtp(res.dev_otp || '');
         setOtpSent(true);
         startResendTimer();
       } else {
@@ -124,9 +126,15 @@ export default function FarmerLogin() {
             </form>
           ) : (
             <form onSubmit={handleLogin} className="space-y-4">
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-2 text-xs text-emerald-800 text-center">
-                📱 {t('smsSent')} {phone}
-              </div>
+              {devOtp ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2 text-xs text-amber-800 text-center font-mono">
+                  Dev OTP (SMS unavailable): <span className="font-black text-amber-900">{devOtp}</span>
+                </div>
+              ) : (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-2 text-xs text-emerald-800 text-center">
+                  📱 {t('smsSent')} {phone}
+                </div>
+              )}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-carbon-500 uppercase tracking-wide">{t('enterOtp6')}</label>
                 <input type="text" placeholder="••••••" maxLength={6} value={otp}
@@ -134,7 +142,7 @@ export default function FarmerLogin() {
                   className="w-full bg-warm-white border border-forest-100 rounded-2xl p-3 text-center text-sm font-bold tracking-widest focus:ring-0 focus:border-forest-400 shadow-inner" required />
               </div>
               <div className="flex justify-between text-[10px]">
-                <button type="button" className="font-bold text-forest-700 hover:underline" onClick={() => { setOtpSent(false); setOtp(''); }}>
+                <button type="button" className="font-bold text-forest-700 hover:underline" onClick={() => { setOtpSent(false); setDevOtp(''); setOtp(''); }}>
                   {t('changePhone')}
                 </button>
                 <button type="button" disabled={resendTimer > 0} onClick={handleSendOtp}

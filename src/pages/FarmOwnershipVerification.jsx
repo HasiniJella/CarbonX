@@ -6,7 +6,7 @@ import {
   RefreshCw, Camera, AlertTriangle, Eye, Edit2, Check, Landmark 
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { mockFarmer } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
 
 export default function FarmOwnershipVerification() {
   const navigate = useNavigate();
@@ -140,13 +140,25 @@ export default function FarmOwnershipVerification() {
     farmPhotos: { file: null, progress: 0, status: 'idle', name: '' },
   });
 
+  const { user, farms } = useAuth();
+
   const [ocrData, setOcrData] = useState({
-    farmerName: "Ramesh Kumar",
-    surveyNumber: "184/A/2",
-    village: "Venkateshwara Pally",
-    area: "4.28 Hectares",
-    aadhaarMatch: "99.4%"
+    farmerName: '',
+    surveyNumber: '',
+    village: '',
+    area: '',
+    aadhaarMatch: '—',
   });
+
+  useEffect(() => {
+    setOcrData({
+      farmerName: user?.name || '',
+      surveyNumber: '',
+      village: user?.village || '',
+      area: farms[0]?.area_hectares ? `${farms[0].area_hectares} Hectares` : '',
+      aadhaarMatch: user?.aadhaar_last4 ? `****${user.aadhaar_last4}` : '—',
+    });
+  }, [user, farms]);
 
   const [isEditingOcr, setIsEditingOcr] = useState(false);
   const [ocrEditFields, setOcrEditFields] = useState({ ...ocrData });

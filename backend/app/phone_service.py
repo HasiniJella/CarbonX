@@ -2,41 +2,36 @@ import os
 import random
 
 
-class SmsDeliveryError(Exception):
-    """Raised when Twilio SMS cannot be delivered."""
-
-
 def generate_otp() -> str:
     return str(random.randint(100000, 999999))
 
 
-def _twilio_configured() -> bool:
-    return all(
-        os.getenv(k, "").strip()
-        for k in ("TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_PHONE_NUMBER")
-    )
-
-
-def send_phone_otp(phone: str, otp: str) -> None:
-    """Send OTP via Twilio SMS. Raises SmsDeliveryError if Twilio is missing or fails."""
+def send_phone_otp(phone: str, otp: str) -> bool:
+    """
+    Send OTP via Twilio SMS if credentials are configured,
+    otherwise fall back to dev-mode console log.
+    Returns True if SMS was sent, False if dev-mode fallback used.
+    """
     account_sid = os.getenv("TWILIO_ACCOUNT_SID", "").strip()
     auth_token = os.getenv("TWILIO_AUTH_TOKEN", "").strip()
     from_number = os.getenv("TWILIO_PHONE_NUMBER", "").strip()
 
-    if not _twilio_configured():
-        raise SmsDeliveryError(
-            "SMS service is not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in backend/.env."
-        )
+    if account_sid and auth_token and from_number:
+        try:
+            from twilio.rest import Client
 
-    try:
-        from twilio.rest import Client
+            client = Client(account_sid, auth_token)
+            message = client.messages.create(
+                body=f"Your CarbonX OTP is: {otp}. Valid for 10 minutes. Do not share this code.",
+                from_=from_number,
+                to=f"+91{phone}",
+            )
+            print(f"[TWILIO] SMS sent to +91{phone}, SID: {message.sid}")
+            return True
+        except Exception as e:
+            print(f"[TWILIO ERROR] Failed to send SMS to +91{phone}: {e}")
+            print(f"[DEV FALLBACK] OTP for +91{phone}: {otp}")
+            return False
 
-        client = Client(account_sid, auth_token)
-        message = client.messages.create(
-            body=f"Your CarbonX OTP is: {otp}. Valid for 10 minutes. Do not share this code.",
-            from_=from_number,
-            to=f"+91{phone}",
-        )
-        print(f"[TWILIO] SMS sent to +91{phone}, SID: {message.sid}")
-    except Exception as e:
-        raise SmsDeliveryError(f"Failed to send SMS: {e}") from e
+    print(f"[DEV MODE] Twilio not configured. OTP for +91{phone}: {otp}")
+    return False
